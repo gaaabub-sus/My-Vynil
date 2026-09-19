@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi vinilo</title>
+<style>
+  :root { --accent: #2f7d5b; --ink: #1e293b; --muted: #64748b; --d: 148px; }
+  @media (max-width: 380px) { :root { --d: 118px; } }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: transparent; }
+  body { display: grid; place-items: center; padding: 12px; }
+
+  .stage { position: relative; width: 100%; max-width: 440px; padding-top: 72px; }
+
+  /* Pestaña de color: sale desde detrás de la barra blanca al dar play y se esconde al pausar */
+  .info {
+    position: absolute;
+    z-index: 1;
+    top: 32px;
+    left: calc(var(--d) + 44px);
+    right: 26px;
+    height: 58px;
+    background: var(--accent);
+    border-radius: 18px 18px 0 0;
+    transform: translateY(44px);
+    transition: transform .45s cubic-bezier(.2, .8, .2, 1), background .3s;
+  }
+  .spinning .info { transform: none; }
+
+  /* Barra blanca con los controles */
+  .card {
+    position: relative;
+    z-index: 2;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 18px 0 calc(var(--d) + 40px);
+    background: #fff;
+    border-radius: 26px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, .14);
+  }
+
+  .btn {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .btn:hover { color: var(--ink); }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .btn svg { width: 28px; height: 28px; fill: currentColor; }
+  .play { width: 60px; height: 60px; color: var(--accent); transition: color .4s; }
+  .play:hover { color: var(--accent); filter: brightness(.9); }
+  .play svg { width: 40px; height: 40px; }
+  .play .i-pause, .spinning .play .i-play { display: none; }
+  .spinning .play .i-pause { display: block; }
+
+  /* La base blanca donde se apoya el disco (queda vacía mientras se cambia de vinilo) */
+  .disc-wrap {
+    position: absolute;
+    z-index: 3;
+    left: 22px;
+    top: calc(72px - var(--d) * .38);
+    width: var(--d);
+    height: var(--d);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 7px #fff, 0 8px 18px rgba(15, 23, 42, .16);
+    cursor: pointer;
+  }
+
+  /* Sube y se desvanece al sacar el disco; baja al poner el nuevo */
+  .lift {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transition: transform .6s cubic-bezier(.4, 0, .2, 1), opacity .6s;
+  }
+  .lift.out { transform: translateY(-34px) scale(1.1); opacity: 0; }
+
+  .disc {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation: spin 3.2s linear infinite;
+    animation-play-state: paused;
+  }
+  .spinning .disc { animation-play-state: running; }
+  .disc svg { display: block; width: 100%; height: 100%; }
+  .sheen {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    background: conic-gradient(from 20deg,
+      rgba(255, 255, 255, 0) 0 10%,
+      rgba(255, 255, 255, .22) 16%,
+      rgba(255, 255, 255, 0) 24% 50%,
+      rgba(255, 255, 255, .22) 66%,
+      rgba(255, 255, 255, 0) 74%);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lift, .info { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <div class="info" aria-hidden="true"></div>
+
+  <div class="card">
+    <button class="btn" id="prev" aria-label="Vinilo anterior">
+      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM20 6v12L9.5 12z"/></svg>
+    </button>
+    <button class="btn play" id="play" aria-label="Girar el disco" aria-pressed="false">
+      <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </button>
+    <button class="btn" id="next" aria-label="Vinilo siguiente">
+      <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM4 6v12l10.5-6z"/></svg>
+    </button>
+  </div>
+
+  <div class="disc-wrap" id="disc">
+    <div class="lift" id="lift">
+      <div class="disc">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="100" fill="#0f1115"/>
+          <g fill="none" stroke="#fff" stroke-opacity=".06">
+            <circle cx="100" cy="100" r="95"/><circle cx="100" cy="100" r="90"/>
+            <circle cx="100" cy="100" r="85"/><circle cx="100" cy="100" r="80"/>
+            <circle cx="100" cy="100" r="75"/><circle cx="100" cy="100" r="68"/>
+            <circle cx="100" cy="100" r="63"/><circle cx="100" cy="100" r="58"/>
+            <circle cx="100" cy="100" r="53"/><circle cx="100" cy="100" r="48"/>
+          </g>
+          <g fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="2">
+            <circle cx="100" cy="100" r="72"/><circle cx="100" cy="100" r="44"/>
+          </g>
+          <circle cx="100" cy="100" r="36" style="fill: var(--accent)"/>
+          <path d="M100 64a36 36 0 0 1 0 72z" fill="#fff" fill-opacity=".2"/>
+          <circle cx="100" cy="74" r="3.5" fill="#fff"/>
+          <circle cx="100" cy="100" r="6" fill="#f1f5f9"/>
+        </svg>
+        <div class="sheen"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ==========================================================
+     AJUSTES
+     SWAP_EVERY: segundos que dura cada vinilo girando antes de
+                 pasar al siguiente (el tiempo solo corre al girar)
+     COLORS:     color de la etiqueta de cada vinilo, en orden.
+                 Agrega o quita colores a tu gusto.
+     ========================================================== */
+  const SWAP_EVERY = 30;
+  const COLORS = ["#2f7d5b", "#3b5bdb", "#c2410c", "#7c3aed", "#be185d"];
+  /* ========================================================== */
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), play = $("play"), lift = $("lift");
+  let idx = 0, elapsed = 0, swapping = false;
+
+  function showDisc() {
+    stage.style.setProperty("--accent", COLORS[idx]);
+  }
+
+  function toggle() {
+    const on = stage.classList.toggle("spinning");
+    play.setAttribute("aria-pressed", on);
+  }
+  play.addEventListener("click", toggle);
+  $("disc").addEventListener("click", toggle);
+
+  /* Cambio de vinilo: sale el disco, la base queda vacía un instante y entra el nuevo */
+  function swapTo(n) {
+    if (swapping) return;
+    swapping = true;
+    lift.classList.add("out");
+    setTimeout(() => {
+      idx = (n + COLORS.length) % COLORS.length;
+      elapsed = 0;
+      showDisc();
+      lift.classList.remove("out");
+      setTimeout(() => { swapping = false; }, 700);
+    }, 900);
+  }
+  $("prev").addEventListener("click", () => swapTo(idx - 1));
+  $("next").addEventListener("click", () => swapTo(idx + 1));
+
+  /* Reloj: avanza solo mientras el disco gira; al llegar al final pasa al siguiente */
+  setInterval(() => {
+    if (!stage.classList.contains("spinning") || swapping) return;
+    elapsed += 0.1;
+    if (elapsed >= SWAP_EVERY) swapTo(idx + 1);
+  }, 100);
+
+  showDisc();
+</script>
+</body>
+</html>
